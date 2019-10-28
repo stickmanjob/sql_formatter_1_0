@@ -1,16 +1,19 @@
 <template>
   <div id="app">
-    <SqlInput/>
+    <sql-input/>
+    <sql-output/>
   </div>
 </template>
 
 <script>
 import SqlInput from './components/SqlInput.vue'
+import SqlOutput from './components/SqlOutput.vue'
 
 export default {
   name: 'app',
   components: {
-    SqlInput
+    'sql-input' : SqlInput,
+    'sql-output' : SqlOutput
   }
 }
 </script>

@@ -16,7 +16,12 @@ export default new Vuex.Store({
       state.sqlOutputData = value
     }
   },
-  actions: {
-
+  getters: {
+    getSqlInputData (state) {
+      return state.sqlInputData
+    },
+    getSqlOutputData (state) {
+      return state.sqlOutputData
+    }
   }
 })

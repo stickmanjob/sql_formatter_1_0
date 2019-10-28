@@ -1,12 +1,22 @@
 <template>
   <div>
-    <textarea></textarea>
+    <textarea v-model="sqlInputData"></textarea>
   </div>
 </template>
 
 <script>
 export default {
   name: 'SqlInput',
+  computed: {
+    sqlInputData: {
+      get () {
+        return this.$store.state.sqlInputData
+      },
+      set (value) {
+        this.$store.commit('updateSqlInputData', value)
+      }
+    }
+  }
 }
 </script>
 
