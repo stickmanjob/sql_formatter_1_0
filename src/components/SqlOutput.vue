@@ -8,10 +8,13 @@
 export default {
   name: 'SqlOutput',
   methods: {
+    test: function (strSqlData) {
+      return strSqlData.replace(/IN\((\S*,{0,1}\s*)*\)/gi, 'IN($1$2$3$4$5)AAAAA')
+    },
     preFormatting: function (strSqlData) { 
       // タブ、連続する半角スペース、改行は削除
       // console.log(strValue.replace(/\r?\n+/g, ' ').replace(/\t/g, ' ').replace(/\s{2,}/g, ' '))
-      return strSqlData.replace(/\r?\n+/g, ' ').replace(/\t/g, '').replace(/\s{2,}/g, ' ')
+      return strSqlData.replace(/\r?\n+/g, ' ').replace(/\t/g, ' ').replace(/\s{2,}/g, ' ')
     },
     mainFormatting: function (strSqlData) {
      let words = ''
@@ -39,7 +42,7 @@ export default {
         select: {value: /^SELECT$/i, noBreakWords: /^(TOP|DISTINCT)$/i, spacedWords: /^(UNION|ALL)$/i},
         from: {value: /^FROM$/i, noBreakWords: /^(?!.*)$/i, spacedWords: /^.*$/i},
         where: {value: /^WHERE$/i, noBreakWords: /^(?!.*)$/i, spacedWords: /^.*$/i},
-        order: {value: /^ORDER$/i, noBreakWords: /^BY$/i, spacedWords: /^.*$/i},
+        order: {value: /^(ORDER|GROUP)$/i, noBreakWords: /^BY$/i, spacedWords: /^.*$/i},
         inner: {value: /^INNER$/i, noBreakWords: /^JOIN$/i, spacedWords: /^.*$/i},
         left: {value: /^LEFT$/i, noBreakWords: /^(OUTER|JOIN)$/i, spacedWords: /^.*$/i},
         outer: {value: /^OUTER$/i, noBreakWords: /^JOIN$/i, spacedWords: /^(?!.*)$/i},
@@ -48,7 +51,8 @@ export default {
         full: {value: /^FULL$/i, noBreakWords: /^(OUTER|JOIN)$/i, spacedWords: /^.*$/i},
         // case1: {value: /^CASE$/i, noBreakWords: /^(?!WHEN)*/i, spacedWords: /^(?!.*)$/i},
         case2: {value: /^(WHEN|ELSE|THEN)/i, noBreakWords: /^.*/i, spacedWords: /^(?!.*)$/i},
-        others: {value: /.*$/i, noBreakWords: /^([=,+,<,>,-,%,!]+|IN|BETWEEN|AS|ASC|DESC|THEN|LIKE)$/i, spacedWords: /^(?!.*)$/i}
+        is: {value: /^IS$/i, noBreakWords: /^NULL/i, spacedWords: /^(?!.*)$/i},
+        others: {value: /.*$/i, noBreakWords: /(^([=,+,<,>,-,%,!]+|AS|ASC|DESC|THEN|LIKE)$|IN|BETWEEN)/i, spacedWords: /^(?!.*)$/i}
       }
       
       // SQL文を単語ごとに配列に格納
@@ -130,7 +134,7 @@ export default {
       get () {
         let sqlInputData = this.$store.state.sqlInputData
         let sqlTmpData
-
+        // sqlTmpData = this.test(sqlInputData);
         sqlTmpData = this.preFormatting(sqlInputData);
         sqlTmpData = this.mainFormatting(sqlTmpData);
         sqlTmpData = this.indentFormatting(sqlTmpData);
