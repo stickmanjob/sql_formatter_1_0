@@ -17,14 +17,16 @@ export default {
       return strSqlData.replace(/\r?\n+/g, ' ').replace(/\t/g, ' ').replace(/\s{2,}/g, ' ')
     },
     mainFormatting: function (strSqlData) {
-     let words = ''
-      let beforeWord = ''
-      let afterWord = ''
+      let words = ''
+      let beforeWord = '' // 前の単語
+      let afterWord = '' // 次の単語
       let outputText = ''
       let sentences = ['']
       let sentenceIndex = 0
-      let breakDiv = true
-      let spacedDiv = false
+      let breakDiv = true //改行フラグ
+      let spacedDiv = false //追加行間フラグ
+      // let functionParenthesesCount = 0
+      let functionDiv = false
       // **************************************************************
       // ■ keywordsオブジェクト使われ方
       //   value        : 単語がvalueの値と一致した場合「改行しないか」、「行間をあけるか」について判定される
@@ -35,7 +37,7 @@ export default {
         operator: {value: /^([=+<>\-%!]{1,2}|LIKE)$/i, noBreakWords: /^.*$/i, spacedWords: /^(?!.*)$/i},
         openParentheses: {value: /^\($/i, noBreakWords: /^(?!.*)$/i, spacedWords: /^(?!.*)$/i},
         closeParentheses: {value: /^\)$/i, noBreakWords: /^AS$/i, spacedWords: /^(?!.*)$/i},
-        in: {value: /^IN$/i, noBreakWords: /^.*$/i, spacedWords: /^(?!.*)$/i},
+        in: {value: /^(IN|IS|BETWEEN)$/i, noBreakWords: /^.*$/i, spacedWords: /^(?!.*)$/i},
         as: {value: /^AS$/i, noBreakWords: /^.*$/i, spacedWords: /^(?!.*)$/i},
         join: {value: /^JOIN$/i, noBreakWords: /^[^()]*$/i, spacedWords: /^(?!.*)$/i},
         AggregateFnc: {value: /^(MAX|AVG|COUNT|MIN|SUM)$/i, noBreakWords: /^.*$/i, spacedWords: /^(?!.*)$/i},        
@@ -49,10 +51,9 @@ export default {
         top: {value: /^TOP$/i, noBreakWords: /^.*$/i, spacedWords: /^(?!.*)$/i},
         union: {value: /^UNION$/i, noBreakWords: /^ALL$/i, spacedWords: /^.*$/i},
         full: {value: /^FULL$/i, noBreakWords: /^(OUTER|JOIN)$/i, spacedWords: /^.*$/i},
-        // case1: {value: /^CASE$/i, noBreakWords: /^(?!WHEN)*/i, spacedWords: /^(?!.*)$/i},
-        case2: {value: /^(WHEN|ELSE|THEN)/i, noBreakWords: /^.*/i, spacedWords: /^(?!.*)$/i},
+        case: {value: /^(WHEN|ELSE|THEN)/i, noBreakWords: /^.*/i, spacedWords: /^(?!.*)$/i},
         is: {value: /^IS$/i, noBreakWords: /^NULL/i, spacedWords: /^(?!.*)$/i},
-        others: {value: /.*$/i, noBreakWords: /(^([=,+,<,>,-,%,!]+|AS|ASC|DESC|THEN|LIKE)$|IN|BETWEEN)/i, spacedWords: /^(?!.*)$/i}
+        others: {value: /.*$/i, noBreakWords: /(^([=,+,<,>,-,%,!]+|AS|ASC,?|DESC,?|THEN|LIKE|IS)$|IN|BETWEEN)/i, spacedWords: /^(?!.*)$/i}
       }
       
       // SQL文を単語ごとに配列に格納
@@ -65,24 +66,43 @@ export default {
         spacedDiv = false
         beforeWord = words[index - 1]
         afterWord = words[index + 1]
-        for (let keyword of Object.keys(keywords)) {
-          // console.log(keywords[keyword].value.test(word))
-          if (keywords[keyword].value.test(word)) {
-            // 前の単語が行間開ける語だった場合のみ追加で改行を行う
-            if (keywords[keyword].spacedWords.test(beforeWord)) {
-              spacedDiv = true
+
+        // if (/MAX/i.test(word)) {
+        //   functionDiv = true
+        // }
+        // if (functionDiv == true && /\(/.test(word)) {
+        //   functionParenthesesCount++
+        // }
+        // if (functionDiv == true && /\)/.test(word)) {
+        //   functionParenthesesCount--
+        // }
+        // if (functionParenthesesCount <= 0) {
+        //   functionDiv = false
+        // }
+        if (functionDiv == true) {
+          breakDiv = false
+          spacedDiv = false
+        }else{
+          for (let keyword of Object.keys(keywords)) {
+            // console.log(keywords[keyword].value.test(word))
+            if (keywords[keyword].value.test(word)) {
+              // 前の単語が行間開ける語だった場合のみ追加で改行を行う
+              if (keywords[keyword].spacedWords.test(beforeWord)) {
+                spacedDiv = true
+              }
+              // 次の単語が改行禁止語だった場合のみ改行しない
+              if (keywords[keyword].noBreakWords.test(afterWord)) {
+                // console.log('word:' + word)
+                // console.log('words[index + 1]:' + afterWord)
+                // console.log('index:' + index)
+                word = word + ' '
+                breakDiv = false
+              }
+              if (spacedDiv === true || breakDiv === false) break
             }
-            // 次の単語が改行禁止語だった場合のみ改行しない
-            if (keywords[keyword].noBreakWords.test(afterWord)) {
-              // console.log('word:' + word)
-              // console.log('words[index + 1]:' + afterWord)
-              // console.log('index:' + index)
-              word = word + ' '
-              breakDiv = false
-            }
-            if (spacedDiv === true || breakDiv === false) break
           }
         }
+ 
         // 行間の追加
         if (spacedDiv) {
           sentenceIndex++
@@ -92,7 +112,6 @@ export default {
         sentences[sentenceIndex] = sentences[sentenceIndex] + word
         // 改行
         if (breakDiv) {
-          // word = word + '\n'
           sentenceIndex++
           sentences[sentenceIndex] = ''
         }
@@ -112,11 +131,11 @@ export default {
       sentences = strSqlData.split('\n')
 
       outputText = sentences.map(sentence => {
-        if ((/^(\)\s*|END)/i).test(sentence)) {
+        if ((/^(\)\s*|END)/i).test(sentence) && indentCount > 0) {
           indentCount--
         }
         // eslint-disable-next-line
-        console.log(indentCount);
+        //console.log(indentCount);
         for (let i = 0; i < indentCount; i++) {
           sentence = '\t' + sentence
         }
