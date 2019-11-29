@@ -53,7 +53,7 @@ export default {
         full: {value: /^FULL$/i, noBreakWords: /^(OUTER|JOIN)$/i, spacedWords: /^.*$/i},
         case: {value: /^(WHEN|ELSE|THEN)/i, noBreakWords: /^.*/i, spacedWords: /^(?!.*)$/i},
         is: {value: /^IS$/i, noBreakWords: /^NULL/i, spacedWords: /^(?!.*)$/i},
-        others: {value: /.*$/i, noBreakWords: /(^([=,+,<,>,-,%,!]+|AS|ASC,?|DESC,?|THEN|LIKE|IS)$|IN|BETWEEN)/i, spacedWords: /^(?!.*)$/i}
+        others: {value: /.*$/i, noBreakWords: /(^([=,+,<,>,-,%,!]+|AS|ASC,?|DESC,?|THEN|LIKE|IS|IN|BETWEEN)$)/i, spacedWords: /^(?!.*)$/i}
       }
       
       // SQL文を単語ごとに配列に格納
