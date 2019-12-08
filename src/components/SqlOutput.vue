@@ -25,8 +25,9 @@ export default {
       let sentenceIndex = 0
       let breakDiv = true //改行フラグ
       let spacedDiv = false //追加行間フラグ
-      // let functionParenthesesCount = 0
-      let functionDiv = false
+      let functionDiv = false //関数フラグ
+      //let functionParenthesesDiv = false //関数括弧フラグ
+      let functionParenthesesCount = 0 //関数括弧のカウント
       // **************************************************************
       // ■ keywordsオブジェクト使われ方
       //   value        : 単語がvalueの値と一致した場合「改行しないか」、「行間をあけるか」について判定される
@@ -53,8 +54,10 @@ export default {
         full: {value: /^FULL$/i, noBreakWords: /^(OUTER|JOIN)$/i, spacedWords: /^.*$/i},
         case: {value: /^(WHEN|ELSE|THEN)/i, noBreakWords: /^.*/i, spacedWords: /^(?!.*)$/i},
         is: {value: /^IS$/i, noBreakWords: /^NULL/i, spacedWords: /^(?!.*)$/i},
-        others: {value: /.*$/i, noBreakWords: /(^([=,+,<,>,-,%,!]+|AS|ASC,?|DESC,?|THEN|LIKE|IS|IN|BETWEEN)$)/i, spacedWords: /^(?!.*)$/i}
+        others: {value: /.*$/i, noBreakWords: /(^([=,+,<,>,-,%,!]+|AS|ASC,?|DESC,?|THEN|LIKE|IS)$)|^(IN\(?|BETWEEN\(?|OVER\(?)/i, spacedWords: /^(?!.*)$/i}
       }
+      //関数名
+      const functionName = /^(COUNT\(?|SUM\(?|AVG\(?|MAX\(?|MIN\(?|ASCII\(?|CONVERT\(?|CAST\(?|ROW_NUMBER\(?|OVER\(?|DENSE_RANK\(?|IN\(?|BETWEEN\(?)/i
       
       // SQL文を単語ごとに配列に格納
       words = strSqlData.split(' ')
@@ -67,21 +70,31 @@ export default {
         beforeWord = words[index - 1]
         afterWord = words[index + 1]
 
-        // if (/MAX/i.test(word)) {
-        //   functionDiv = true
-        // }
-        // if (functionDiv == true && /\(/.test(word)) {
-        //   functionParenthesesCount++
-        // }
-        // if (functionDiv == true && /\)/.test(word)) {
-        //   functionParenthesesCount--
-        // }
-        // if (functionParenthesesCount <= 0) {
-        //   functionDiv = false
-        // }
+        //関数内(MAX,IN,ISNULL)などは括弧の中では改行しない
+        if (functionName.test(word)) {
+          functionDiv = true
+          if (/^(?!.*\().+$/.test(word) && /^(?!.*\().+$/.test(afterWord)) {
+            functionDiv = false
+          }
+        }
+        if (functionDiv == true && /\(/.test(word)) {
+          functionParenthesesCount++
+        }
+        if (functionDiv == true && /\)/.test(word)) {
+          functionParenthesesCount--
+          if (functionParenthesesCount <= 0) {
+            functionDiv = false
+          }
+        }
+
+        //関数内は改行処理をスキップ
         if (functionDiv == true) {
           breakDiv = false
           spacedDiv = false
+          if(!(/(\()$/.test(word) || /^(\))/.test(afterWord))){
+            word = word + ' '
+          }
+        //改行処理
         }else{
           for (let keyword of Object.keys(keywords)) {
             // console.log(keywords[keyword].value.test(word))
