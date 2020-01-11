@@ -57,7 +57,7 @@ export default {
         others: {value: /.*$/i, noBreakWords: /(^([=,+,<,>,-,%,!]+|AS|ASC,?|DESC,?|THEN|LIKE|IS)$)|^(IN\(?|BETWEEN\(?|OVER\(?)/i, spacedWords: /^(?!.*)$/i}
       }
       //関数名
-      const functionName = /^(COUNT\(?|SUM\(?|AVG\(?|MAX\(?|MIN\(?|ASCII\(?|CONVERT\(?|CAST\(?|ROW_NUMBER\(?|OVER\(?|DENSE_RANK\(?|IN\(?|BETWEEN\(?)/i
+      const functionName = /^(COUNT\(?|SUM\(?|AVG\(?|MAX\(?|MIN\(?|ASCII\(?|CONVERT\(?|CAST\(?|ROW_NUMBER\(?|OVER\(?|DENSE_RANK\(?|IN\(?|BETWEEN\(?|ISNULL\(?)/i
       
       // SQL文を単語ごとに配列に格納
       words = strSqlData.split(' ')
@@ -144,7 +144,7 @@ export default {
       sentences = strSqlData.split('\n')
 
       outputText = sentences.map(sentence => {
-        if ((/^(\)\s*|END)/i).test(sentence) && indentCount > 0) {
+        if ((/(\)\s*|END)/i).test(sentence)) {
           indentCount--
         }
         // eslint-disable-next-line
@@ -152,7 +152,7 @@ export default {
         for (let i = 0; i < indentCount; i++) {
           sentence = '\t' + sentence
         }
-        if ((/(\($|CASE)/i).test(sentence)) {
+        if ((/(\(|CASE)/i).test(sentence)) {
           indentCount++
         }
         return sentence
