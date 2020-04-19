@@ -6,15 +6,19 @@
 
 <script>
 export default {
+  /* eslint-disable no-console */
   name: 'SqlOutput',
   methods: {
     test: function (strSqlData) {
       return strSqlData.replace(/IN\((\S*,{0,1}\s*)*\)/gi, 'IN($1$2$3$4$5)AAAAA')
     },
-    preFormatting: function (strSqlData) { 
+    preFormatting: function (strSqlData) {
+      let strPreFormattedData = ''
       // タブ、連続する半角スペース、改行は削除
       // console.log(strValue.replace(/\r?\n+/g, ' ').replace(/\t/g, ' ').replace(/\s{2,}/g, ' '))
-      return strSqlData.replace(/\r?\n+/g, ' ').replace(/\t/g, ' ').replace(/\s{2,}/g, ' ')
+      strPreFormattedData = strSqlData.replace(/\r?\n+/g, ' ').replace(/\t/g, ' ').replace(/((\(|\)))/g,' $1 ').replace(/\s{2,}/g, ' ')
+      strPreFormattedData = strPreFormattedData.replace(/(SELECT)\s(\*)/ig, '$1 #$2').replace(/(,)\s(\*) /ig, '$1 #$2')
+      return strPreFormattedData
     },
     mainFormatting: function (strSqlData) {
       let words = ''
@@ -37,14 +41,14 @@ export default {
       const keywords = {
         operator: {value: /^([=+<>\-%!]{1,2}|LIKE)$/i, noBreakWords: /^.*$/i, spacedWords: /^(?!.*)$/i},
         openParentheses: {value: /^\($/i, noBreakWords: /^(?!.*)$/i, spacedWords: /^(?!.*)$/i},
-        closeParentheses: {value: /^\)$/i, noBreakWords: /^AS$/i, spacedWords: /^(?!.*)$/i},
+        closeParentheses: {value: /^\)$/i, noBreakWords: /^(AS|OVER)$/i, spacedWords: /^(?!.*)$/i},
         in: {value: /^(IN|IS|BETWEEN)$/i, noBreakWords: /^.*$/i, spacedWords: /^(?!.*)$/i},
         as: {value: /^AS$/i, noBreakWords: /^.*$/i, spacedWords: /^(?!.*)$/i},
         join: {value: /^JOIN$/i, noBreakWords: /^[^()]*$/i, spacedWords: /^(?!.*)$/i},
         AggregateFnc: {value: /^(MAX|AVG|COUNT|MIN|SUM)$/i, noBreakWords: /^.*$/i, spacedWords: /^(?!.*)$/i},        
         select: {value: /^SELECT$/i, noBreakWords: /^(TOP|DISTINCT)$/i, spacedWords: /^(UNION|ALL)$/i},
         from: {value: /^FROM$/i, noBreakWords: /^(?!.*)$/i, spacedWords: /^.*$/i},
-        where: {value: /^WHERE$/i, noBreakWords: /^(?!.*)$/i, spacedWords: /^.*$/i},
+        where: {value: /^(WHERE|HAVING)$/i, noBreakWords: /^(?!.*)$/i, spacedWords: /^.*$/i},
         order: {value: /^(ORDER|GROUP)$/i, noBreakWords: /^BY$/i, spacedWords: /^.*$/i},
         inner: {value: /^INNER$/i, noBreakWords: /^JOIN$/i, spacedWords: /^.*$/i},
         left: {value: /^LEFT$/i, noBreakWords: /^(OUTER|JOIN)$/i, spacedWords: /^.*$/i},
@@ -54,7 +58,8 @@ export default {
         full: {value: /^FULL$/i, noBreakWords: /^(OUTER|JOIN)$/i, spacedWords: /^.*$/i},
         case: {value: /^(WHEN|ELSE|THEN)/i, noBreakWords: /^.*/i, spacedWords: /^(?!.*)$/i},
         is: {value: /^IS$/i, noBreakWords: /^NULL/i, spacedWords: /^(?!.*)$/i},
-        others: {value: /.*$/i, noBreakWords: /(^([=,+,<,>,-,%,!]+|AS|ASC,?|DESC,?|THEN|LIKE|IS)$)|^(IN\(?|BETWEEN\(?|OVER\(?)/i, spacedWords: /^(?!.*)$/i}
+        asterisk: {value: /^\*$/i, noBreakWords: /^.*$/i, spacedWords: /^(?!.*)$/i},
+        others: {value: /.*$/i, noBreakWords: /(^([=,+,<,>,-,%,!,*]+|AS|ASC,?|DESC,?|THEN|LIKE|IS|NOT)$)|^(IN\(?|BETWEEN\(?|OVER\(?)$/i, spacedWords: /^(?!.*)$/i}
       }
       //関数名
       const functionName = /^(COUNT\(?|SUM\(?|AVG\(?|MAX\(?|MIN\(?|ASCII\(?|CONVERT\(?|CAST\(?|ROW_NUMBER\(?|OVER\(?|DENSE_RANK\(?|IN\(?|BETWEEN\(?|ISNULL\(?)/i
@@ -99,12 +104,20 @@ export default {
           for (let keyword of Object.keys(keywords)) {
             // console.log(keywords[keyword].value.test(word))
             if (keywords[keyword].value.test(word)) {
+              console.log('***文字判定***')
+              console.log('WORD:' + word)
+              console.log('KEYWORD:' + keyword)
+              console.log('AFTERWORD:' + afterWord)
+              console.log('行間判定:' + keywords[keyword].spacedWords.test(beforeWord))
+              console.log('改行判定:' + keywords[keyword].noBreakWords.test(afterWord))
+
               // 前の単語が行間開ける語だった場合のみ追加で改行を行う
               if (keywords[keyword].spacedWords.test(beforeWord)) {
                 spacedDiv = true
               }
               // 次の単語が改行禁止語だった場合のみ改行しない
               if (keywords[keyword].noBreakWords.test(afterWord)) {
+                // console.log('***次改行なし***')
                 // console.log('word:' + word)
                 // console.log('words[index + 1]:' + afterWord)
                 // console.log('index:' + index)
@@ -167,9 +180,10 @@ export default {
         let sqlInputData = this.$store.state.sqlInputData
         let sqlTmpData
         // sqlTmpData = this.test(sqlInputData);
-        sqlTmpData = this.preFormatting(sqlInputData);
-        sqlTmpData = this.mainFormatting(sqlTmpData);
-        sqlTmpData = this.indentFormatting(sqlTmpData);
+        sqlTmpData = this.preFormatting(sqlInputData)
+        sqlTmpData = this.mainFormatting(sqlTmpData)
+        sqlTmpData = this.indentFormatting(sqlTmpData)
+        sqlTmpData = sqlTmpData.replace(/#\*/ig, '*')
         return sqlTmpData
       },
       set (value) {
