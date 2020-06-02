@@ -1,5 +1,6 @@
 <template>
   <div>
+    <div>変換後</div>
     <textarea v-model="sqlOutputData"></textarea>
   </div>
 </template>
@@ -17,7 +18,7 @@ export default {
       // タブ、連続する半角スペース、改行は削除
       // console.log(strValue.replace(/\r?\n+/g, ' ').replace(/\t/g, ' ').replace(/\s{2,}/g, ' '))
       strPreFormattedData = strSqlData.replace(/\r?\n+/g, ' ').replace(/\t/g, ' ').replace(/((\(|\)))/g,' $1 ').replace(/\s{2,}/g, ' ')
-      strPreFormattedData = strPreFormattedData.replace(/(SELECT)\s(\*)/ig, '$1 #$2').replace(/(,)\s(\*) /ig, '$1 #$2')
+      strPreFormattedData = strPreFormattedData.replace(/(SELECT)\s(\*)/ig, '$1 #$2').replace(/(,)\s(\*)/ig, '$1 #$2')
       return strPreFormattedData
     },
     mainFormatting: function (strSqlData) {
@@ -58,7 +59,8 @@ export default {
         full: {value: /^FULL$/i, noBreakWords: /^(OUTER|JOIN)$/i, spacedWords: /^.*$/i},
         case: {value: /^(WHEN|ELSE|THEN)/i, noBreakWords: /^.*/i, spacedWords: /^(?!.*)$/i},
         is: {value: /^IS$/i, noBreakWords: /^NULL/i, spacedWords: /^(?!.*)$/i},
-        asterisk: {value: /^\*$/i, noBreakWords: /^.*$/i, spacedWords: /^(?!.*)$/i},
+        asterisk: {value: /^#\*$/i, noBreakWords: /^(?!.*)$/i, spacedWords: /^(?!.*)$/i},
+        kake: {value: /^\*$/i, noBreakWords: /^.*$/i, spacedWords: /^(?!.*)$/i},
         others: {value: /.*$/i, noBreakWords: /(^([=,+,<,>,-,%,!,*]+|AS|ASC,?|DESC,?|THEN|LIKE|IS|NOT)$)|^(IN\(?|BETWEEN\(?|OVER\(?)$/i, spacedWords: /^(?!.*)$/i}
       }
       //関数名
@@ -157,7 +159,7 @@ export default {
       sentences = strSqlData.split('\n')
 
       outputText = sentences.map(sentence => {
-        if ((/(\)\s*|END)/i).test(sentence)) {
+        if ((/(\)\s*|END)/i).test(sentence) && (/^(?!.*\().*$/i).test(sentence)) {
           indentCount--
         }
         // eslint-disable-next-line
@@ -165,7 +167,7 @@ export default {
         for (let i = 0; i < indentCount; i++) {
           sentence = '\t' + sentence
         }
-        if ((/(\(|CASE)/i).test(sentence)) {
+        if ((/(\(|CASE)/i).test(sentence) && (/^(?!.*\)).*$/i).test(sentence)) {
           indentCount++
         }
         return sentence
@@ -184,10 +186,13 @@ export default {
         sqlTmpData = this.mainFormatting(sqlTmpData)
         sqlTmpData = this.indentFormatting(sqlTmpData)
         sqlTmpData = sqlTmpData.replace(/#\*/ig, '*')
+        this.$store.commit('updateSqlOutputData', sqlTmpData)
+
         return sqlTmpData
       },
       set (value) {
-        this.$store.commit('sqlOutputData', value)
+        this.$store.commit('updateSqlInputData', value)
+
       }
     }
   }

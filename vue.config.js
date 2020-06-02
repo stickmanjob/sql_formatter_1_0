@@ -1,5 +1,8 @@
 module.exports = {
     publicPath: "./",
     assetsDir: "",
-    outputDir: "dist"
+    outputDir: "dist",
+    configureWebpack: {
+      devtool: 'source-map'
+    }
   }

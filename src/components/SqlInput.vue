@@ -1,5 +1,6 @@
 <template>
   <div>
+    <div>変換前</div>
     <textarea v-model="sqlInputData"></textarea>
   </div>
 </template>
